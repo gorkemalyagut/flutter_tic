@@ -1,8 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_tic/models/server.dart';
+import 'package:provider/provider.dart';
 
-class Settings extends StatelessWidget {
-  const Settings({Key? key}) : super(key: key);
+class Settings extends StatefulWidget {
+  
+  @override
+  _SettingsState createState() => _SettingsState();
+}
 
+class _SettingsState extends State<Settings> {
+
+  final _formKey = GlobalKey<FormState>();
+  late final serverProvider = Provider.of<Server>(context, listen: false);
+
+  void _submitLink() {
+
+    if (!_formKey.currentState!.validate()) {
+        _formKey.currentState!.save();
+    }
+  }
   @override
   Widget build(BuildContext context) => Scaffold(
       appBar: AppBar(
@@ -28,6 +45,14 @@ class Settings extends StatelessWidget {
                   ),
                 ),
               ),
+              validator: (input) => 
+                  input!.trim().isEmpty ? 'Please enter your server Link' : null,
+              initialValue: serverProvider.serverLink,
+                onSaved: (input) {
+                  setState(() {
+                    serverProvider.setServerLink(input as String);
+                });
+                }
             ),
             SizedBox(height: 60),
             Align(
@@ -42,9 +67,7 @@ class Settings extends StatelessWidget {
                   borderRadius: BorderRadius.circular(30),
                 ),
               ),
-              onPressed: () {
-
-              },
+              onPressed: _submitLink,
               child: Text(
                 "Save",
                 style: TextStyle(
@@ -59,4 +82,5 @@ class Settings extends StatelessWidget {
         ),
       ),
   );
+
 }

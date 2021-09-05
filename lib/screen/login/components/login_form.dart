@@ -1,7 +1,9 @@
+import 'package:cool_alert/cool_alert.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tic/models/user.dart';
 import 'package:flutter_tic/models/users_database.dart';
 import 'package:flutter_tic/screen/login/components/profil_form.dart';
+
 
 class LoginForm extends StatefulWidget {
    LoginForm({ 
@@ -9,8 +11,7 @@ class LoginForm extends StatefulWidget {
     required this.isLogin, 
     required this.animationDuration, 
     required this.size, 
-    required this.defaultLoginSize 
-    
+    required this.defaultLoginSize,
     }) : super(key: key);
 
     final bool isLogin;
@@ -18,35 +19,47 @@ class LoginForm extends StatefulWidget {
     final Size size;
     final double defaultLoginSize;
 
+  
   @override
   _LoginFormState createState() => new _LoginFormState();
 }
 
 class _LoginFormState extends State<LoginForm> {
 
-  TextEditingController mailController = TextEditingController();
-  TextEditingController passwordController = TextEditingController();
-   late BuildContext _ctx;
-  GlobalKey<FormState> formKey = new GlobalKey<FormState>();
-  final scaffoldMessengerKey = new GlobalKey<ScaffoldMessengerState>();
+  final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  String _username = '';
+  String _password = '';
+  bool _isLoading = false;
   late User user;
-  late String _mail;
-  late String _password;
-  late UserHelper db = new UserHelper();
-   bool _isLoading = false;
+  late UserHelper? helper;
 
-    void initState() {
-    super.initState();
-    this.db = new UserHelper();
-    this.db.initializeDB().whenComplete(() async {
-      setState(() {});
-    });
+
+  _loginUserBtn(){
+    if(_formKey.currentState!.validate()){
+
+      _username = _usernameController.text;
+      _password = _passwordController.text;
+      print('{$_username,$_password}');
+
+      UserHelper.instance.checkLogin(_usernameController.text, _passwordController.text).then((value) => {
+        if(value != null){
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => AppPage())),
+        }
+        else{
+          CoolAlert.show(
+            context: context,
+            type: CoolAlertType.warning,
+            text: "Your login was error!",),
+        }
+      });
+    }
   }
   @override
   Widget build(BuildContext context) {
-    _ctx = context;
     return Form(
-      key: formKey,
+      key: _formKey,
       child: GestureDetector(
         child: Stack(
             children: <Widget>[
@@ -74,9 +87,6 @@ class _LoginFormState extends State<LoginForm> {
                     ),
                       SizedBox(height: 50),
                       TextFormField(
-                            controller: mailController,
-                            keyboardType: TextInputType.emailAddress,
-                            onSaved: (val) => _mail = val!,
                             style: TextStyle(
                               color: Colors.black87,
                             ),
@@ -95,30 +105,28 @@ class _LoginFormState extends State<LoginForm> {
                                 Icons.email,
                                 color: Colors.indigoAccent.shade400,
                               ),
-                              labelText: 'Email',
+                              labelText: 'Username',
                               labelStyle: TextStyle(color: Colors.indigo..shade700, fontWeight: FontWeight.bold,fontSize: 16),
-                              hintText: "Email",
+                              hintText: "Username",
                               hintStyle: TextStyle(
                                 color: Colors.indigoAccent.shade100,
                               ),
                             ),
-                            validator: (value){
-                              if(value == null || value.isEmpty){
-                                return "Please enter your email";
+                            controller: _usernameController,
+                            validator: (input){
+                              if(input == null || input.isEmpty){
+                                return "Please enter your username";
                               }
                               return null;
                             }
+                          
                           ),
                       SizedBox(height: 40),
                       TextFormField(
-                            controller: passwordController,
-                            keyboardType: TextInputType.text,
-                            onSaved: (val) => _password = val!,
                             obscureText: true,
                             style: TextStyle(
                               color: Colors.black87,
                             ),
-
                            decoration: InputDecoration(
                               filled: true,
                               fillColor: Colors.indigo.shade50,
@@ -141,8 +149,9 @@ class _LoginFormState extends State<LoginForm> {
                                 color: Colors.indigoAccent.shade100,
                               ),
                             ),
-                            validator: (value) {
-                                if (value == null || value.isEmpty) {
+                            controller: _passwordController,
+                            validator: (input) {
+                                if (input == null || input.isEmpty) {
                                     return 'Please enter your password';
                                 }
                               return null;
@@ -161,20 +170,7 @@ class _LoginFormState extends State<LoginForm> {
                                     borderRadius: BorderRadius.circular(30),
                                   )
                                 ),
-                                onPressed: () { 
-                                   Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => AppPage()));
-                                    if(formKey.currentState!.validate())
-                                    {
-                                      _submit();
-                                      scaffoldMessengerKey.currentState!.showSnackBar(new SnackBar(content: 
-                                      new Text("Login Success"),));
-                                         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => AppPage()));
-                                      
-                                    }else{
-                                      scaffoldMessengerKey.currentState!.showSnackBar(new SnackBar(content: 
-                                        new Text("Login error!"),));
-                                    }
-                                },
+                                onPressed: _loginUserBtn,
                                 child: Text(
                                   "LOGIN",
                                   style: TextStyle(
@@ -198,15 +194,6 @@ class _LoginFormState extends State<LoginForm> {
       ),
     );
   }
-  void _submit() {
-    final form = formKey.currentState;
-    if (form!.validate()) {
-      setState(() async {
-        _isLoading = true;
-        form.save();
-         await db.getLogin(_mail, _password);
-      });
-    }
-  }
+
 }
 

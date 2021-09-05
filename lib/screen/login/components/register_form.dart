@@ -13,6 +13,7 @@ class RegisterForm extends StatefulWidget {
     required this.defaultLoginSize,
     required this.animationController,
     required this.tapEvent,
+    this.user,
   }) : super(key: key);
 
   final bool isLogin;
@@ -21,7 +22,7 @@ class RegisterForm extends StatefulWidget {
   final GestureTapCallback tapEvent;
   final double defaultLoginSize;
   final AnimationController animationController;
-
+  final User? user;
 
   @override
   _RegisterFormState createState() => new _RegisterFormState();
@@ -29,18 +30,42 @@ class RegisterForm extends StatefulWidget {
 
 class _RegisterFormState extends State<RegisterForm> {
 
-  TextEditingController mailController = TextEditingController();
-  TextEditingController passwordController = TextEditingController();
-  TextEditingController usernameController = TextEditingController();
-  GlobalKey<FormState> formKey = new GlobalKey<FormState>();
-  final scaffoldMessengerKey = new GlobalKey<ScaffoldMessengerState>();
-  bool _isLoading = false;
-  late  String _mail,_username,_password;
-  late final UserHelper db;
-  late User user;
+  String _email = '';
+  String _name = '';
+  String _username = '';
+  String _password = '';
 
-  void initState() {
-    super.initState();
+  final _formKey = GlobalKey<FormState>();
+
+  _submit(){
+    if(_formKey.currentState!.validate()){
+      _formKey.currentState!.save();
+      print('$_email, $_name,$_username,$_password');
+      
+      User user = User(
+        mail: _email,
+        name: _name,
+        username: _username,
+        password: _password,
+      );
+
+      if(widget.user == null){
+        UserHelper.instance.insertUser(user);
+        CoolAlert.show(
+          context: context,
+          type: CoolAlertType.success,
+          text: "Your register was successful!",
+        );
+      }
+      else{
+         CoolAlert.show(
+          context: context,
+          type: CoolAlertType.warning,
+          text: "Your register was error!",
+        );
+        
+      }
+    }
   }
   @override
   Widget build(BuildContext context) {
@@ -57,7 +82,7 @@ class _RegisterFormState extends State<RegisterForm> {
             height: widget.defaultLoginSize,
             child: SingleChildScrollView(
               child: Form(
-                key: formKey,
+                key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -70,11 +95,8 @@ class _RegisterFormState extends State<RegisterForm> {
                       fontSize: 24
                     ),
                   ),
-                  SizedBox(height: 100),
+                  SizedBox(height: 40),
                    TextFormField(
-                            controller: mailController,
-                            keyboardType: TextInputType.emailAddress,
-                            onSaved: (val) => _mail = val!,
                             style: TextStyle(
                               color: Colors.black87,
                             ),
@@ -88,7 +110,7 @@ class _RegisterFormState extends State<RegisterForm> {
                                 borderRadius: BorderRadius.all(Radius.circular(30)),
                                 borderSide: BorderSide(width: 1,color: Colors.indigo.shade700),
                               ),
-                              contentPadding: EdgeInsets.only(top: 50),
+                              contentPadding: EdgeInsets.only(top: 40),
                               prefixIcon: Icon(
                                 Icons.email,
                                 color: Colors.indigoAccent.shade400,
@@ -100,19 +122,15 @@ class _RegisterFormState extends State<RegisterForm> {
                                 color: Colors.indigoAccent.shade100,
                               ),
                             ),
-                            validator: (value){
-                              if(value == null || value.isEmpty){
-                                return "Please enter your email";
-                              }
-                              return null;
-                            }
-                            
+
+                            validator: (input) => 
+                              input!.trim().isEmpty ? 'Please enter your email' : null,
+                            onSaved: (input) => _email = input!,
+                            initialValue: _email,
+
                           ),
                   SizedBox(height: 50),
                   TextFormField(
-                            controller: usernameController,
-                            keyboardType: TextInputType.text,
-                            onSaved: (val) => _username = val!,
                             style: TextStyle(
                               color: Colors.black87,
                             ),
@@ -127,7 +145,7 @@ class _RegisterFormState extends State<RegisterForm> {
                                 borderRadius: BorderRadius.all(Radius.circular(30)),
                                 borderSide: BorderSide(width: 1,color: Colors.indigo.shade700),
                               ),
-                              contentPadding: EdgeInsets.only(top: 50),
+                              contentPadding: EdgeInsets.only(top: 40),
                               prefixIcon: Icon(
                                 Icons.people,
                                 color: Colors.indigoAccent.shade400,
@@ -139,18 +157,49 @@ class _RegisterFormState extends State<RegisterForm> {
                                 color: Colors.indigoAccent.shade100,
                               ),
                             ),
-                            validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                    return 'Please enter your name';
-                                }
-                              return null;
-                          },
+
+                            validator: (input) => 
+                              input!.trim().isEmpty ? 'Please enter your name' : null,
+                            onSaved: (input) => _name = input!,
+                            initialValue: _name,
+
                       ),
                   SizedBox(height: 50),
                   TextFormField(
-                            controller: passwordController,
-                            keyboardType: TextInputType.text,
-                            onSaved: (val) =>  _password = val!,
+                            style: TextStyle(
+                              color: Colors.black87,
+                            ),
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: Colors.indigo.shade50,
+                              border: OutlineInputBorder(
+                              borderRadius: BorderRadius.all(Radius.circular(30)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(30)),
+                                borderSide: BorderSide(width: 1,color: Colors.indigo.shade700),
+                              ),
+                              contentPadding: EdgeInsets.only(top: 40),
+                              prefixIcon: Icon(
+                                Icons.email,
+                                color: Colors.indigoAccent.shade400,
+                              ),
+                              labelText: 'Username',
+                              labelStyle: TextStyle(color: Colors.indigo..shade700, fontWeight: FontWeight.bold,fontSize: 24),
+                              hintText: "Username",
+                              hintStyle: TextStyle(
+                                color: Colors.indigoAccent.shade100,
+                              ),
+                            ),
+
+                            validator: (input) => 
+                              input!.trim().isEmpty ? 'Please enter your username' : null,
+                            onSaved: (input) => _username = input!,
+                            initialValue: _username,
+                            
+                          ),
+                  SizedBox(height: 50,),
+                  TextFormField(
                             obscureText: true,
                             style: TextStyle(
                               color: Colors.black87,
@@ -165,7 +214,7 @@ class _RegisterFormState extends State<RegisterForm> {
                                 borderRadius: BorderRadius.all(Radius.circular(30)),
                                 borderSide: BorderSide(width: 1,color: Colors.indigo.shade700),
                               ),
-                              contentPadding: EdgeInsets.only(top: 50),
+                              contentPadding: EdgeInsets.only(top: 40),
                               prefixIcon: Icon(
                                 Icons.lock,
                                 color: Colors.indigoAccent.shade400,
@@ -177,12 +226,12 @@ class _RegisterFormState extends State<RegisterForm> {
                                 color: Colors.indigoAccent.shade100,
                               ),
                             ),
-                            validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                    return 'Please enter your password';
-                                }
-                              return null;
-                          },
+
+                            validator: (input) => 
+                              input!.trim().isEmpty ? 'Please enter your password' : null,
+                            onSaved: (input) => _password = input!,
+                            initialValue: _password,
+
                       ),
                   SizedBox(height: 50),
                   Container(
@@ -197,28 +246,7 @@ class _RegisterFormState extends State<RegisterForm> {
                               borderRadius: BorderRadius.circular(30),
                             )
                           ),
-                          onPressed: () async {
-                            if(formKey.currentState!.validate())
-                            {
-                              CoolAlert.show(
-                                context: context,
-                                type: CoolAlertType.success,
-                                text: "Your register was successful!",
-                              );
-                                return;
-                            }else{
-                              CoolAlert.show(
-                                context: context,
-                                type: CoolAlertType.warning,
-                                text: "Your register was error!",
-                              );
-                            }
-                            _mail = mailController.text;
-                            _username = usernameController.text;
-                            _password = passwordController.text;
-                            var user = User(mail: _mail, name: _username, password: _password);
-                            await db.insertUser(user);
-                            },
+                          onPressed: _submit,
                           child: Text(
                             "SIGN UP",
                             style: TextStyle(

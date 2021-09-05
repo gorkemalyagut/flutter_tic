@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_tic/models/request_db.dart';
 import 'package:flutter_tic/screen/login/components/profil_form.dart';
 
 
@@ -10,14 +9,10 @@ class RequestDetail extends StatefulWidget {
   @override
   _RequestDetailState createState()  => _RequestDetailState();
     
-  
 }
-
 class _RequestDetailState extends State<RequestDetail> {
   
-  RequestHelper helper = RequestHelper();
-
-
+  
   bool shouldPop = true;
 
   TextEditingController nameController = TextEditingController();

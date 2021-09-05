@@ -1,31 +1,36 @@
 class User{
-  late final String? mail;
-  late final String? password;
-  late final String? name;
+int? id;
+String? mail;
+String? name;
+String? username;
+String? password;
 
-  User({
-  required this.mail,
-  required this.password,
-  required this.name,
-
+User({
+    this.id,
+    this.mail,
+    this.name,
+    this.username,
+    this.password,
   }
 );
 Map<String, dynamic> toMap() {
-    return {
-      'mail': mail,
-      'password': password,
-      'name': name,
-    };
-}
-User.fromMap(Map<String,  dynamic> map){
-    mail = map['mail'];
-    password = map['password'];
-    name = map['name'];
-
-}
-@override
-String toString() {
-    return 'User{mail: $mail, password: $password, name: $name}';
+  final map = Map<String,dynamic>();
+  if(id != null){
+    map['id'] = id;
   }
+  map['mail']= mail;
+  map['name']= name;
+  map['username']= username;
+  map['password']= password;
+  return map;
+  }
+factory User.fromMap(Map<String, dynamic> map){
+  return User(
+  id: map['id'],
+  mail: map['mail'],
+  name: map['name'],
+  username: map['username'],
+  password: map['password'],
+  );
 }
-
+}

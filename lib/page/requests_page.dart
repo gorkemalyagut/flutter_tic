@@ -1,117 +1,154 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tic/models/request.dart';
 import 'package:flutter_tic/models/request_db.dart';
 import 'package:flutter_tic/page/add_request_page.dart';
-import 'package:flutter_tic/page/request_details.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:flutter_tic/screen/login/components/profil_form.dart';
 import 'package:intl/intl.dart';
 
-class Request extends StatefulWidget {
+class Requests extends StatefulWidget {
 
   @override
-  State <StatefulWidget> createState() {
-    return RequestState();
-  }
+  _RequestsState createState() => _RequestsState();
 }
-class RequestState extends State<Request> {
 
-  int count = 0;
-  late RequestHelper handler;
-  late List<RequestsDB> requestList;
+class _RequestsState extends State<Requests> {
+
+  late Future<List<RequestsDB>> _requestList;
+
+  final DateFormat _dateFormatter = DateFormat('MMM dd , yyyy');
+
+  RequestHelper _dbHelper = RequestHelper.instance;
 
   @override
-  void initState() {
+  void initState(){
     super.initState();
-    this.handler = RequestHelper();
-    this.handler.initializeDB().whenComplete(() async {
-      
-      setState(() {});
-    });
+    _updateRequestsList();
   }
+
+  _updateRequestsList(){
+    _requestList = RequestHelper.instance.getRequestList();
+  }
+
+  Widget _buildRequests(RequestsDB request){
+    return Padding(
+      padding: EdgeInsets.only(top: 0),
+      child: Column(
+        children: [
+          ListTile(
+            title: Text('${request.type!} -- ${_dateFormatter.format(request.date!)}',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.indigo,
+              decoration: request.status == 0 
+                ? TextDecoration.none 
+                  : TextDecoration.lineThrough
+            ),),
+            subtitle: Text('${request.fullname} - ${request.priority} - Tekniker Atandı',style: TextStyle(
+              fontSize: 18,
+              color: Colors.indigo.shade200,
+               decoration: request.status == 0 
+                ? TextDecoration.none
+                  : TextDecoration.lineThrough
+
+            ),),
+            trailing: Checkbox(
+              onChanged: (value){
+                request.status = value! ? 1 : 0;
+                RequestHelper.instance.updateRequest(request);
+                _updateRequestsList();
+                Navigator.pushReplacement(context, CupertinoPageRoute(builder: (context) => Requests()));
+              },
+              activeColor: Theme.of(context).primaryColor,
+              value: request.status == 1 ? true : false,
+            ),
+            onTap: () => Navigator.push(context, CupertinoPageRoute(builder: (_) => AddRequest(
+                updateRequestList: _updateRequestsList(),
+                request: request,
+            ))),
+            isThreeLine: true,
+            leading: Icon(Icons.pending_actions),
+          ),
+          Divider(height: 20, color: Colors.indigo, thickness: 1,),
+        ],
+      ),
+      );
+  }
+
   @override
   Widget build(BuildContext context) {
-
-    final DateTime now = DateTime.now();
-    
     return Scaffold(
-       appBar: AppBar(title: Text("Pandding Requests"),
-       backgroundColor: Colors.indigo.shade400,
-       centerTitle: true,
+      appBar: AppBar(
+        title: Text('Panding Requests'),
+        backgroundColor: Colors.indigo.shade400,
+        centerTitle: true,
+        leading: IconButton(
+             icon: Icon(Icons.arrow_back_ios_new,size: 30,),
+             onPressed: () {
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => AppPage()));
+             
+             },
+      ),
+      ),
+       backgroundColor: Colors.white,
+       floatingActionButton: FloatingActionButton(
+         backgroundColor: Colors.indigo,
+         onPressed: () {
+           Navigator.push(context, CupertinoPageRoute(builder: (_) => AddRequest(
+             updateRequestList: _updateRequestsList,
+           ),));
+         },
+         child: Icon(Icons.add),
        ),
        body: FutureBuilder(
-         future: this.handler.retrieveRequest(),
-        builder: (BuildContext context, AsyncSnapshot<List<RequestsDB>> snapshot) {
-          if (snapshot.hasData) {
-            return ListView.builder(
-              itemCount: snapshot.data?.length,
-              itemBuilder: (BuildContext context, int index) {
-                return Dismissible(
-                  direction: DismissDirection.endToStart,
-                  background: Container(
-                    color: Colors.red,
-                    alignment: Alignment.centerRight,
-                    padding: EdgeInsets.symmetric(horizontal: 10),
-                    child: Icon(Icons.delete_forever),
-                  ),
-                  key: ValueKey<int>(snapshot.data![index].level),
-                  onDismissed: (DismissDirection direction) async {
-                    await this.handler.deleteRequest(snapshot.data![index].level);
-                    setState(() {
-                      snapshot.data!.remove(snapshot.data![index]);
-                    });
-                  },
-                  child: Card(
-                    
-                      child: ListTile(
-                    leading: Icon(Icons.fact_check_outlined),
-                    contentPadding: EdgeInsets.all(8.0),
-                    title: Text(snapshot.data![index].description,),
-                    subtitle: Text(snapshot.data![index].fullname.toString(),),
-                    trailing: Text('$now'),
-                    isThreeLine: true,
-                   
-                    
-                  )),
-                );
-              },
-            );
-          } else {
-            return Center(child: CircularProgressIndicator());
-          }
-        },
-      ),
-       floatingActionButton: FloatingActionButton(
-         onPressed: () {
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => RequestDetail()));
-         },
-         tooltip: "Add Details",
-         child: Icon(Icons.add, size: 30, ),
-         backgroundColor: Colors.indigo,
-       ),
-       
+         
+         future: _requestList,
+         builder: (context, AsyncSnapshot snapshot){
+           if(!snapshot.hasData){
+             return Center(
+               child: CircularProgressIndicator(),
+             );
+           }
+
+           final int completedRequestCount = snapshot.data!.where((RequestsDB request) => request.status == 1).toList().length;
+
+       return ListView.builder(
+         padding: EdgeInsets.symmetric(vertical: 80),
+         itemCount: int.parse(snapshot.data!.length.toString()) + 1,
+         itemBuilder: (BuildContext context , int index){
+           if(index == 0){
+             return Padding(
+               padding: EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+               child: Column(
+                 crossAxisAlignment: CrossAxisAlignment.start,
+                 children: [
+                   Text(
+                     "My Requests",
+                     style: TextStyle(
+                       color: Colors.indigo,
+                       fontSize: 40,
+                       fontWeight: FontWeight.bold,
+                     ),
+                     ),
+                     SizedBox(height: 25,),
+                     Text(
+                       '$completedRequestCount of ${snapshot.data.length}',
+                       style: TextStyle(
+                         color: Colors.indigo,
+                         fontSize: 15,
+                         fontWeight: FontWeight.w600,
+                       ),
+                     ),
+                ],
+               )
+             );
+           }
+           return _buildRequests(snapshot.data![index - 1]);
+         }
+      );
+  }
+    ),
     );
   }
-  void updateListView() {
-		final Future<Database> dbFuture = handler.initializeDB();
-		dbFuture.then((database) {
-
-			Future<List<RequestsDB>> requestListFuture = handler.retrieveRequest();
-			requestListFuture.then((requestList) {
-				setState(() {
-				  this.requestList = requestList;
-				  this.count = requestList.length;
-				});
-			});
-		});
-  }
-  void navigateToDetail(RequestsDB request, String name) async {
-	  bool result = await Navigator.push(context, MaterialPageRoute(builder: (context) {
-		  return AddRequest();
-	  }));
-
-	  if (result == true) {
-	  	updateListView();
-	  }
-  }
- 
 }
